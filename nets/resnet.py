@@ -8,9 +8,10 @@ class ResNet(keras.Model):
 
     def __init__(self, block, layer_params, num_classes=1000):
         super(ResNet, self).__init__()
+        self.inplanes = 64
 
         # Conv1
-        self.conv1 = Conv2D(filters=64,
+        self.conv1 = Conv2D(filters=self.inplanes,
                             kernel_size=(7, 7),
                             strides=2, 
                             padding="same")
@@ -45,11 +46,14 @@ class ResNet(keras.Model):
     def _make_layer(self, filter_num, block, block_num, stride=1):
         # 先来一个 block
         res_block = keras.Sequential()
-        res_block.add(block(filter_num, stride=stride))  # 每个 Layer 的第一个 Block 可能 downsample
+        res_block.add(block(self.inplanes, filter_num, stride=stride))  # 每个 Layer 的第一个 Block 可能 downsample
 
-        # 剩余 3 个 block
+        # 更新 Block 的输入 inplanes
+        self.inplanes = filter_num * block.expansion  
+
+        # 剩余 block
         for _ in range(1, block_num):                    # 剩余 Block 不做 downsample, stride=1
-            res_block.add(block(filter_num, stride=1))
+            res_block.add(block(self.inplanes, filter_num, stride=1))
 
         return res_block
 

@@ -4,8 +4,13 @@ from tensorflow.keras.layers import Layer, Conv2D, BatchNormalization, Activatio
 
 
 class BasicBlock(Layer):
-    
-    def __init__(self, filter_num, stride=1):
+    '''
+    实现 BasicBlock 本不必设置 expansion, 初始化也不必 inplanes
+    为了和 BottleNeck 保持调用方式一致, 才加入的
+    '''
+    expansion = 1
+
+    def __init__(self, inplanes, filter_num, stride=1):
         super(BasicBlock, self).__init__()
 
         self.conv1 = Conv2D(filters=filter_num, 
@@ -43,9 +48,10 @@ class BasicBlock(Layer):
 
 
 class BottleNeck(Layer):
+    expansion = 4
 
-    def __init__(self, filter_num, stride=1):
-        super(BottleNeck, self).__init__()
+    def __init__(self, inplanes, filter_num, stride=1):
+        super(BottleNeck, self).__init__()        
         self.conv1 = Conv2D(filters=filter_num, 
                             kernel_size=(1, 1),
                             strides=1,
@@ -56,20 +62,23 @@ class BottleNeck(Layer):
                             strides=stride,  # 可能 downsample
                             padding='same')
         self.bn2 = BatchNormalization()
-        self.conv3 = Conv2D(filters=filter_num*4,
+        self.conv3 = Conv2D(filters=filter_num * self.expansion,  # 对输出做 channel expansion
                             kernel_size=(1, 1),
                             strides=1,
                             padding="same")
         self.bn3 = BatchNormalization()
 
-        # 各个 Layer 的第一个 Block, stride != 1
-        # shortcut 需要 downsample, 同时 Layer 之间 channels 需要一致
-        if stride != 1:
+        # downsample 用于 shortcut 中, 使得 residual 和 output 可相加 (HW,C 保持一致)
+        # 各个 Layer 的第一个 Block, stride != 1 所以 shortcut 需要 downsample
+        # 同时 Layer 之间 channels 需要一致, 所以 downsample 的 filters = filter_num * self.expansion
+        # 对于第一个 Layer, stride=1 不做 downsample, 但是输出和出入 channels 不一致 仍然需要进行 expansion
+        if stride != 1 or inplanes != filter_num * self.expansion:
             self.downsample = keras.Sequential()
-            self.downsample.add(Conv2D(filters=filter_num*4,  # 和 conv3 一致都是 filter_num*4
+            self.downsample.add(Conv2D(filters=filter_num * self.expansion,  # 使 channel 一致
                                     kernel_size=(1, 1),
-                                    strides=stride))          # 和 conv2 一致都需 downsample
+                                    strides=stride))          # 使 spatial 一致
             self.downsample.add(BatchNormalization())
+
         # 若非第一个 Block (即 stride == 1 时, shortcut 不需要调整 identity 即可)
         else:
             self.downsample = lambda x: x
