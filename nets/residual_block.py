@@ -62,21 +62,20 @@ class BottleNeck(Layer):
                             strides=stride,  # 可能 downsample
                             padding='same')
         self.bn2 = BatchNormalization()
-        self.conv3 = Conv2D(filters=filter_num * self.expansion,  # 对输出做 channel expansion
+        self.conv3 = Conv2D(filters=filter_num * self.expansion,  # Block 输出做 channel expansion
                             kernel_size=(1, 1),
                             strides=1,
                             padding="same")
         self.bn3 = BatchNormalization()
 
-        # downsample 用于 shortcut 中, 使得 residual 和 output 可相加 (HW,C 保持一致)
-        # 各个 Layer 的第一个 Block, stride != 1 所以 shortcut 需要 downsample
-        # 同时 Layer 之间 channels 需要一致, 所以 downsample 的 filters = filter_num * self.expansion
-        # 对于第一个 Layer, stride=1 不做 downsample, 但是输出和出入 channels 不一致 仍然需要进行 expansion
+        # downsample 用于 shortcut 中, 使得 shortcut 和 output 可相加 (HW,C 保持一致)
+        # 对于第一个 Layer, 第一个 Block 不做空间 downsample (stride=1), 但 Block 输出和出入 channels 不一致, 仍需Conv1x1
+        # 对于其余的 Layer, 第一个 Block 需要 downsample (stride!=1), 同时 Block 输出和出入 channels 不一致, 也需Conv1x1
         if stride != 1 or inplanes != filter_num * self.expansion:
             self.downsample = keras.Sequential()
             self.downsample.add(Conv2D(filters=filter_num * self.expansion,  # 使 channel 一致
-                                    kernel_size=(1, 1),
-                                    strides=stride))          # 使 spatial 一致
+                                    kernel_size=(1, 1),                      # 使用 Conv1x1
+                                    strides=stride))                         # 使 spatial 一致
             self.downsample.add(BatchNormalization())
 
         # 若非第一个 Block (即 stride == 1 时, shortcut 不需要调整 identity 即可)
