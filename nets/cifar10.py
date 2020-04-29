@@ -86,3 +86,13 @@ else:
                         validation_data=(X_test, Y_test),
                         epochs=nb_epoch, verbose=1, max_queue_size=100,
                         callbacks=[lr_reducer, early_stopper, csv_logger])
+
+'''
+1562/1562 [==============================] - 3615s 2s/step - loss: 0.4836 - acc: 0.8328 - val_loss: 0.5641 - val_acc: 0.8086
+Epoch 39/200
+1562/1562 [==============================] - 4083s 3s/step - loss: 0.4624 - acc: 0.8381 - val_loss: 0.5726 - val_acc: 0.8081
+Epoch 40/200
+1562/1562 [==============================] - 4152s 3s/step - loss: 0.4498 - acc: 0.8488 - val_loss: 0.5576 - val_acc: 0.8117
+Epoch 41/200
+ 628/1562 [===========>..................] - ETA: 47:11 - loss: 0.4345 - acc: 0.8548
+ '''

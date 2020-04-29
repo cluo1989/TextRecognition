@@ -1,7 +1,10 @@
 # coding: utf-8
 from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, MaxPool2D, GlobalAveragePooling2D, Dense
-from residual_block import BasicBlock, BottleNeck
+
+import sys
+sys.path.append("..")
+from nets.residual_block import BasicBlock, BottleNeck
 
 
 class ResNet(keras.Model):
