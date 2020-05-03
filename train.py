@@ -25,11 +25,6 @@ def train(run_name, start_epoch, stop_epoch, img_w):
     minibatch_size = 32
     pool_size = 2
 
-    # if K.image_data_format() == 'channels_first':
-    #     input_shape = (1, img_w, img_h)
-    # else:
-    #     input_shape = (img_w, img_h, 1)
-
     # create generator
     fdir = os.path.dirname(
         get_file('wordlists.tgz',
@@ -44,14 +39,13 @@ def train(run_name, start_epoch, stop_epoch, img_w):
         img_h=img_h,
         downsample_factor=(pool_size ** 2),
         val_split=words_per_epoch - val_words)
-    tt=next(img_gen.next_train())
-    print('tt-------',tt[0]["inputs"].shape, tt[0]["labels"].shape)
+    
     # build model
     model = crnn('train')
     model.summary()
 
     sgd = SGD(learning_rate=0.02, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss={'ctc_loss': lambda y_true, y_pred: y_pred}, optimizer=sgd)
+    model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
     # https://stackoverflow.com/questions/51156885/what-is-y-pred-in-keras
     # https://github.com/keras-team/keras/blob/master/examples/image_ocr.py
 
@@ -63,10 +57,9 @@ def train(run_name, start_epoch, stop_epoch, img_w):
         
     # captures output of softmax so we can decode the output during visualization
     test_func = K.function(model.inputs, model.outputs)
-
     viz_cb = VizCallback(run_name, test_func, img_gen.next_val())
-    print("1 -------------------")
-    # fit
+    
+    # start training
     model.fit_generator(generator=img_gen.next_train(),
                         steps_per_epoch=(words_per_epoch - val_words) // minibatch_size,
                         epochs=stop_epoch,
@@ -75,11 +68,11 @@ def train(run_name, start_epoch, stop_epoch, img_w):
                         callbacks=[viz_cb, img_gen],
                         initial_epoch=start_epoch
                         )
-    print("2---------------------")
+
 
 if __name__ == "__main__":
     run_name = datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S')
-    train(run_name, 0, 20, 128)
+    train(run_name, 0, 20, 160)
     # increase to wider images and start at epoch 20.
     # The learned weights are reloaded
     train(run_name, 20, 25, 512)

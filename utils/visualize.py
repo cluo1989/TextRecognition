@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import itertools
 import cairocffi as cairo
 import editdistance
 import numpy as np
@@ -53,6 +54,7 @@ def paint_text(text, w, h, rotate=False, ud=False, multi_fonts=False):
         box = context.text_extents(text)
         border_w_h = (4, 4)
         if box[2] > (w - 2 * border_w_h[1]) or box[3] > (h - 2 * border_w_h[0]):
+            print(text, box, border_w_h)
             raise IOError(('Could not fit string into image.'
                            'Max char count is too large for given image width.'))
 
@@ -85,14 +87,16 @@ def paint_text(text, w, h, rotate=False, ud=False, multi_fonts=False):
 # For a real OCR application, this should be beam search with a dictionary
 # and language model.  For this example, best path is sufficient.
 
-def decode_batch(test_func, word_batch):
-    out = test_func([word_batch])[0]
+def decode_batch(test_func, word_batch, labels, input_length, label_length):
+    out = test_func([word_batch, labels, input_length, label_length])[0]
+    print(out.shape)
     ret = []
     for j in range(out.shape[0]):
         out_best = list(np.argmax(out[j, 2:], 1))
         out_best = [k for k, g in itertools.groupby(out_best)]
         outstr = labels_to_text(out_best)
         ret.append(outstr)
+    print(ret)
     return ret
 
 
@@ -113,9 +117,12 @@ class VizCallback(Callback):
         mean_ed = 0.0
         while num_left > 0:
             word_batch = next(self.text_img_gen)[0]
-            num_proc = min(word_batch['the_input'].shape[0], num_left)
+            num_proc = min(word_batch['inputs'].shape[0], num_left)
             decoded_res = decode_batch(self.test_func,
-                                       word_batch['the_input'][0:num_proc])
+                                       word_batch['inputs'][0:num_proc], 
+                                       word_batch['labels'][0:num_proc], 
+                                       word_batch['input_length'][0:num_proc], 
+                                       word_batch['label_length'][0:num_proc])
             for j in range(num_proc):
                 edit_dist = editdistance.eval(decoded_res[j],
                                               word_batch['source_str'][j])
@@ -133,22 +140,29 @@ class VizCallback(Callback):
             os.path.join(self.output_dir, 'weights%02d.h5' % (epoch)))
         self.show_edit_distance(256)
         word_batch = next(self.text_img_gen)[0]
+        
         res = decode_batch(self.test_func,
-                           word_batch['the_input'][0:self.num_display_words])
-        if word_batch['the_input'][0].shape[0] < 256:
+                           word_batch['inputs'][0:self.num_display_words],
+                           word_batch['labels'][0:self.num_display_words], 
+                           word_batch['input_length'][0:self.num_display_words], 
+                           word_batch['label_length'][0:self.num_display_words])
+        
+        if word_batch['inputs'][0].shape[0] < 256:
             cols = 2
         else:
             cols = 1
         for i in range(self.num_display_words):
             pylab.subplot(self.num_display_words // cols, cols, i + 1)
             if K.image_data_format() == 'channels_first':
-                the_input = word_batch['the_input'][i, 0, :, :]
+                the_input = word_batch['inputs'][i, 0, :, :]
             else:
-                the_input = word_batch['the_input'][i, :, :, 0]
-            pylab.imshow(the_input.T, cmap='Greys_r')
+                the_input = word_batch['inputs'][i, :, :, 0]
+            pylab.imshow(the_input, cmap='Greys_r')
             pylab.xlabel(
                 'Truth = \'%s\'\nDecoded = \'%s\'' %
                 (word_batch['source_str'][i], res[i]))
+
+        # 保存
         fig = pylab.gcf()
         fig.set_size_inches(10, 13)
         pylab.savefig(os.path.join(self.output_dir, 'e%02d.png' % (epoch)))

@@ -138,8 +138,8 @@ def crnn(phase='train'):
         input_length = Input(shape=[1], dtype="int32", name="input_length")
         label_length = Input(shape=[1], dtype="int32", name="label_length")
         
-        ctc_loss = Lambda(ctc_loss_func, output_shape=(1,), name="ctc_loss")([y_pred, labels, input_length, label_length])
-        model = Model(inputs=[img_input, labels, input_length, label_length], outputs=ctc_loss)
+        ctc_loss = Lambda(ctc_loss_func, output_shape=(1,), name="ctc")([y_pred, labels, input_length, label_length])
+        model = Model(inputs=[img_input, labels, input_length, label_length], outputs=[y_pred, ctc_loss])
         
     else:
         decode_pred = Lambda(ctc_decode_func, name="ctc_decode")(y_pred)

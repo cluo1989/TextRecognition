@@ -1,4 +1,5 @@
 # coding: utf-8
+import time
 import codecs
 import numpy as np
 from tensorflow.keras import backend as K
@@ -36,8 +37,8 @@ class TextImageGenerator(Callback):
     # as max_string_len grows, num_words can grow
     def build_word_list(self, num_words, max_string_len=None, mono_fraction=0.5):
         assert max_string_len <= self.absolute_max_string_len
-        assert num_words % self.minibatch_size == 0
-        assert (self.val_split * num_words) % self.minibatch_size == 0
+        assert num_words % self.minibatch_size == 0  # , "Error num_words ---------"
+        assert (self.val_split * num_words) % self.minibatch_size == 0  #, "Error val_split ---------"
         self.num_words = num_words
         self.string_list = [''] * self.num_words
         tmp_string_list = []
@@ -85,6 +86,7 @@ class TextImageGenerator(Callback):
 
         self.cur_val_index = self.val_split
         self.cur_train_index = 0
+        print('get cur_val/train_index:', self.cur_val_index, self.cur_train_index)
 
     # each time an image is requested from train/val/test, a new random
     # painting of the text is performed
@@ -96,9 +98,9 @@ class TextImageGenerator(Callback):
         else:
             X_data = np.ones([size, self.img_h, self.img_w, 1])
 
-        labels = np.ones([size, self.absolute_max_string_len])
-        input_length = np.zeros([size, 1])
-        label_length = np.zeros([size, 1])
+        labels = np.ones([size, self.absolute_max_string_len], dtype=np.float32)
+        input_length = np.zeros([size, 1], dtype=np.int32)
+        label_length = np.zeros([size, 1], dtype=np.int32)
         source_str = []
         for i in range(size):
             # Mix in some blank inputs.  This seems to be important for
@@ -133,11 +135,12 @@ class TextImageGenerator(Callback):
                   'label_length': label_length,
                   'source_str': source_str  # used for visualization only
                   }
-        outputs = {'ctc_loss': np.zeros([size])}  # dummy data for dummy loss function
+        outputs = {'ctc': np.zeros([size])}  # dummy data for dummy loss function
         return (inputs, outputs)
 
-    def next_train(self):
-        self.on_train_begin()        
+    def next_train(self):        
+        print('start next_train')
+        time.sleep(0.5)
         while 1:
             ret = self.get_batch(self.cur_train_index,
                                  self.minibatch_size, train=True)
@@ -149,6 +152,7 @@ class TextImageGenerator(Callback):
             yield ret
 
     def next_val(self):
+        print('start next_val')
         while 1:
             ret = self.get_batch(self.cur_val_index,
                                  self.minibatch_size, train=False)
@@ -157,8 +161,10 @@ class TextImageGenerator(Callback):
                 self.cur_val_index = self.val_split + self.cur_val_index % 32
             yield ret
 
-    def on_train_begin(self, logs={}):        
+    def on_train_begin(self, logs={}):
+        print('start run train begin...')
         self.build_word_list(16000, 4, 1)        
+        print('cur_train_index=', self.cur_train_index)
         self.paint_func = lambda text: paint_text(
             text, self.img_w, self.img_h,
             rotate=False, ud=False, multi_fonts=False)
