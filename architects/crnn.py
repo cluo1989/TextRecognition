@@ -53,7 +53,7 @@ def cnn_baseline(input):
     x = Conv2D(64, (3, 3), strides=(1, 1), padding="same", name="conv1")(input)
     #x = BatchNormalization(name="conv1_bn")(x)
     x = Activation("relu")(x)                 # 可以在 Conv2D 中指定 (如果Conv2D直接Activate)
-    x = MaxPool2D((2, 2), strides=(2, 2))(x)  # 可简写为 MaxPool2D(2)(x)
+    x = MaxPool2D((2, 2), strides=(2, 2))(x)  # 可简写为 MaxPool2D(2)(x), default padding="valid"
 
     # layer2
     x = Conv2D(128, (3, 3), strides=(1, 1), padding="same", name="conv2")(x)
@@ -65,9 +65,11 @@ def cnn_baseline(input):
     x = Conv2D(256, (3, 3), strides=(1, 1), padding="same", name="conv3_1")(x)
     #x = BatchNormalization(name="conv3_1_bn")(x)
     x = Activation("relu")(x)
+
     x = Conv2D(256, (3, 3), strides=(1, 1), padding="same", name="conv3_2")(x)
     #x = BatchNormalization(name="conv3_2_bn")(x)
     x = Activation("relu")(x)
+    
     x = MaxPool2D((2, 2), strides=(2, 1))(x)
 
     # layer4
@@ -83,6 +85,7 @@ def cnn_baseline(input):
 
     # layer5
     x = Conv2D(512, (2, 2), strides=(1, 1), name="conv5")(x)  # default padding="valid"
+    x = Activation("relu")(x)
 
     return x
 
