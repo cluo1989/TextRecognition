@@ -91,20 +91,21 @@ def cnn_baseline(input):
 
 def cnn_resnet(input):
     '''
-    backbone for crnn, based on resnet.
+    backbone for crnn, based on resnet architecture.
+    h stride=2*5, w stride=2*2
     '''
-    x = Conv2D(64, (7, 7), strides=(2, 2), padding="same", name="conv1")(input)
+    x = Conv2D(64, (7, 7), strides=(1, 1), padding="same", name="conv1")(input)  # original strides=(2, 2)
     x = BatchNormalization(name="conv1_bn")(x)
     x = Activation("relu")(x)
     x = MaxPool2D((3, 3), strides=(2, 2))(x)
 
     inplane = 64    
-    layer_nums = [3, 4, 6, 3]
+    layer_nums = [2, 3, 5, 2]  # [3, 4, 6, 3]
     filters = [64, 128, 256, 512]
-    stride_lists = [(2, 2), (2, 2), (2, 1), (2, 1)]
+    stride_lists = [(2, 1), (2, 2), (2, 1), (2, 1)]  # First Layer don't Downsample, 
 
     for i in range(4):
-        x = BottleNeck(inplane, filters[i], stride=stride_lists[i])(x)  # First Layer don't Downsample
+        x = BottleNeck(inplane, filters[i], stride=stride_lists[i])(x)  # First Block of Each Layer do Downsample (except 1st Layer here)
         inplane = filters[i] * BottleNeck.expansion
         for _ in range(1, layer_nums[i]):
             x = BottleNeck(inplane, filters[i], stride=1)(x)
@@ -122,8 +123,8 @@ def crnn(phase='train'):
     img_input = Input(shape=input_shape, name="inputs")
 
     # Convolutional Layers
-    x = cnn_baseline(img_input)
-    # x = cnn_resnet(img_input)
+    # x = cnn_baseline(img_input)
+    x = cnn_resnet(img_input)
 
     # Map to Sequence
     x = Permute((2, 1, 3))(x)  # 转为 WHC
@@ -142,7 +143,7 @@ def crnn(phase='train'):
         label_length = Input(shape=[1], dtype="int32", name="label_length")
         
         ctc_loss = Lambda(ctc_loss_func, output_shape=(1,), name="ctc")([y_pred, labels, input_length, label_length])
-        model = Model(inputs=[img_input, labels, input_length, label_length], outputs=[y_pred, ctc_loss])
+        model = Model(inputs=[img_input, labels, input_length, label_length], outputs=[ctc_loss])#y_pred, 
         
     else:
         decode_pred = Lambda(ctc_decode_func, name="ctc_decode")(y_pred)
