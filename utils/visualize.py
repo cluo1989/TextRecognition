@@ -50,7 +50,7 @@ def paint_text(text, w, h, rotate=False, ud=False, multi_fonts=False):
             context.select_font_face('Courier',
                                      cairo.FONT_SLANT_NORMAL,
                                      cairo.FONT_WEIGHT_BOLD)
-        context.set_font_size(25)
+        context.set_font_size(20)
         box = context.text_extents(text)
         border_w_h = (4, 4)
         if box[2] > (w - 2 * border_w_h[1]) or box[3] > (h - 2 * border_w_h[0]):
