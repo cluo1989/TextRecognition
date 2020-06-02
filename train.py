@@ -1,8 +1,8 @@
 # coding: utf-8
 import os
-import datetime
-# from tensorflow.keras.callbacks import EarlyStopping, ModelCheckPoint, LearningRateScheduler
-from tensorflow.keras.optimizers import SGD
+from datetime import datetime
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, TensorBoard
+from tensorflow.keras.optimizers import SGD, Adam
 from tensorflow.keras.utils import get_file
 import tensorflow.keras.backend as K
 
@@ -10,69 +10,79 @@ import sys
 sys.path.append("..")
 from architects.crnn import crnn
 from datasets import train_generator, val_generator
-from datasets.generator import TextImageGenerator
-from utils.visualize import VizCallback
-
+# from datasets.generator import TextImageGenerator
+# from utils.visualize import VizCallback
+from datasets.text_renderer import generator_data
 import config as cfg
 
 
-def train(run_name, start_epoch, stop_epoch, img_w):
-    # Input Parameters
-    img_h = 32
-    words_per_epoch = 16000
-    val_split = 0.2
-    val_words = int(words_per_epoch * (val_split))
-    minibatch_size = 32
-    pool_size = 2
-
-    # create generator
-    fdir = os.path.dirname(
-        get_file('wordlists.tgz',
-                 origin='http://www.mythic-ai.com/datasets/wordlists.tgz',
-                 untar=True))
-
-    img_gen = TextImageGenerator(
-        monogram_file=os.path.join(fdir, 'wordlist_mono_clean.txt'),
-        bigram_file=os.path.join(fdir, 'wordlist_bi_clean.txt'),
-        minibatch_size=minibatch_size,
-        img_w=img_w,
-        img_h=img_h,
-        downsample_factor=(pool_size ** 2),
-        val_split=words_per_epoch - val_words)
+def train(start_epoch, stop_epoch):
     
     # build model
     model = crnn('train')
     model.summary()
 
-    sgd = SGD(learning_rate=0.02, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
+    # 标准 loss 函数必须定义为 loss(y_true, y_pred) 的形式,y_pred 为模型输出,由于在 crnn.py 中
+    # 已经定义了 outputs=[ctc_loss], 所以这里 y_pred 即为 ctc_loss, 故 loss 无需再计算,直接返回就好了.
+    # https://github.com/qqwweee/keras-yolo3/issues/481
     # https://stackoverflow.com/questions/51156885/what-is-y-pred-in-keras
     # https://github.com/keras-team/keras/blob/master/examples/image_ocr.py
 
-    if start_epoch > 0:
-        weight_file = os.path.join(
-            cfg.OUTPUT_DIR,
-            os.path.join(run_name, 'weights%02d.h5' % (start_epoch - 1)))
-        model.load_weights(weight_file)
-        
+    #sgd = SGD(learning_rate=0.001, decay=1e-6, momentum=0.9, nesterov=True)
+    #adm = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
+    adm = Adam(lr=1e-4)
+    model.compile(optimizer=adm, 
+                  loss={'ctc': lambda y_true, y_pred: y_pred},
+                  metrics=["acc"])
+    
+    # get last weight
+    path = os.path.join(cfg.OUTPUT_DIR, os.path.join('checkpoint'))
+    files = os.listdir(path)
+    if len(files) > 0 and start_epoch != 0:
+        start_weights = "{:04d}".format(start_epoch)
+        for p in files:
+            if start_weights in p:
+                weight_file = p
+                model.load_weights(os.path.join(path, weight_file))
+
     # captures output of softmax so we can decode the output during visualization
-    test_func = K.function(model.inputs, model.outputs)
-    viz_cb = VizCallback(run_name, test_func, img_gen.next_val())
+    #test_func = K.function(model.inputs, model.outputs)
+    #viz_cb = VizCallback(run_name, test_func, img_gen.next_val())
+
+    # callbacks
+    lr_base = 0.001
+    def learning_rate_schedule(epoch):
+        lr = lr_base * 0.9 ** int(epoch/10)
+
+        if epoch%10 == 0:
+            generator_data.save_char_statistic()
+            
+        return lr
+
+    lr_schedule = LearningRateScheduler(schedule=learning_rate_schedule)
+    # filepath = 'outputs/checkpoint/weights.{epoch:04d}-{loss:.4f}-{val_loss:.4f}.h5'
+    filepath = 'outputs/checkpoint/weights.{epoch:04d}-{loss:.4f}.h5'
+    early_stopping = EarlyStopping(monitor='loss', patience=10)
+    model_checkpoint = ModelCheckpoint(filepath=filepath,
+                                        monitor='loss', save_best_only=False,  # True,
+                                        mode='min', save_weights_only=True)
+
+    tensorboard = TensorBoard(log_dir='outputs/summary/'+datetime.now().strftime("%Y:%m:%d-%H:%M:%S"))
+
     
     # start training
-    model.fit_generator(generator=img_gen.next_train(),
-                        steps_per_epoch=(words_per_epoch - val_words) // minibatch_size,
+    model.fit_generator(generator=generator_data.generator_batch(), #img_gen.next_train(),
+                        steps_per_epoch=10, #(words_per_epoch - val_words) // minibatch_size,
                         epochs=stop_epoch,
-                        validation_data=img_gen.next_val(),
-                        validation_steps=val_words // minibatch_size,
-                        callbacks=[viz_cb, img_gen],
+                        # validation_data=generator_data.generator_batch(),
+                        # validation_steps=10,
+                        callbacks=[lr_schedule, early_stopping, model_checkpoint, tensorboard],
                         initial_epoch=start_epoch
                         )
 
 
 if __name__ == "__main__":
-    run_name = datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S')
-    train(run_name, 0, 20, 160)
+    train(0, 2)
     # increase to wider images and start at epoch 20.
     # The learned weights are reloaded
-    train(run_name, 20, 25, 512)
+    # train(20, 25)
