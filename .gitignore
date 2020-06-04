@@ -5,3 +5,5 @@ __pycache__/
 *cache/
 *.csv
 *.h5
+validate_dataset/
+validate_dataset_labels.txt
