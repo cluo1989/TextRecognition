@@ -23,7 +23,7 @@ process_probility = 0.5
 stretch_ratio = 1.0
 batch_idx = 0
 charset = charset.alphabet  # tongyong_charset
-batch_size = 32#100
+batch_size = 8#100
 lock = mp.Lock()
 counter = mp.Value('i', 0)
 STOP_TOKEN = 'kill'
@@ -141,11 +141,11 @@ def multi_process(batch_img, batch_label):
     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:  # max_workers=4, default: os.cpu_count()
         #print("---")
         results = [executor.submit(generator_data, idx) for idx in range(batch_size)]
-        print("111", len(results), results[0].result())
+        #print("111", len(results), results[0].result())
         for res in concurrent.futures.as_completed(results):
-            print("222")
+            #print("222")
             img, label = res.result()
-            print("333")
+            #print("333")
             batch_img.append(img)
             batch_label.append(label)
         #print("+++")

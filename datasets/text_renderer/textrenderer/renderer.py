@@ -269,8 +269,12 @@ class Renderer(object):
         # dst_bbox = (box[0]-offsetlx, box[1]-offsetty, box[2]+offsetrx+offsetlx+offset_width, box[3]+offsetby+offsetty)
 
         dst = img[dst_bbox[1]:dst_bbox[1]+dst_bbox[3], dst_bbox[0]:dst_bbox[0]+dst_bbox[2]]
-        
-        dst = cv2.resize(dst, (self.out_width, self.out_height), interpolation=cv2.INTER_CUBIC)
+        try:
+            dst = cv2.resize(dst, (self.out_width, self.out_height), interpolation=cv2.INTER_CUBIC)
+        except Exception as e:
+            print("Resize fail at renderer>crop_img!: %s" % str(e))
+            traceback.print_exc()
+            raise Exception
 
         return dst, dst_bbox
 

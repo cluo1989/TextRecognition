@@ -17,7 +17,7 @@ class ChnCorpus(Corpus):
         #                     './data/corpus/txt_gen/simi_chs.txt', 
         #                     './data/corpus/txt_gen/random_chinese_word.txt']
         # self.distrib = [0.2, 0.2, 0.1, 0.05, 0.1, 0.35] # book, book, num, simi chars, simi chinese, random_chinese
-        self.corpus_path = ['./datasets/corpus/charset.txt']
+        self.corpus_path = ['./datasets/text_renderer/data/corpus/charset.txt']
         self.distrib = [1.0]
         
         #self.corpus.append('')
