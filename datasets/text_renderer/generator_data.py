@@ -23,7 +23,6 @@ process_probility = 0.5
 stretch_ratio = 1.0
 batch_idx = 0
 charset = charset.alphabet  # tongyong_charset
-batch_size = 8#100
 lock = mp.Lock()
 counter = mp.Value('i', 0)
 STOP_TOKEN = 'kill'
@@ -111,9 +110,8 @@ def generator_data(img_index, q=None):
     #     im = datagen.flow(np.expand_dims(im, -1))
 
     # # save (debug)
-    # name = '{0}_{1}_{2}'.format(batch_idx, img_index, word)
-    # print(name)
-    # cv2.imwrite('./datasets/text_renderer/generate_img/'+ name + '.jpg', im)    
+    # name = '{0}_{1}_{2}'.format(batch_idx, img_index, word.replace('/', '_'))
+    # cv2.imwrite('./datasets/text_renderer/generate_img/'+ name + '.jpg', im)
 
     # normalize
     im = normalization_img(im)
@@ -123,7 +121,7 @@ def generator_data(img_index, q=None):
     # print(q.qsize())
 
 
-def multi_process(batch_img, batch_label):
+def multi_process(batch_img, batch_label, batch_size):
     global gen_para
     gen_para.initial_genpara()
     #print("+"*20, "into")
@@ -149,25 +147,11 @@ def multi_process(batch_img, batch_label):
             batch_img.append(img)
             batch_label.append(label)
         #print("+++")
-    #print("--2--")
-    #print("+"*20, "finish")
-    # with mp.Pool(processes=4) as pool:
-       
-    #     result = pool.starmap(generator_data, zip(range(batch_size), repeat(q)))
-
-    #     q.put(STOP_TOKEN)
-    #     pool.close()
-    #     pool.join()
-
-    # for data in result:
-    #     img, label = data
-    #     batch_img.append(img)
-    #     batch_label.append(label)
 
     return batch_img, batch_label
 
 
-def single_process(batch_img, batch_label):
+def single_process(batch_img, batch_label, batch_size):
     global gen_para
     gen_para.initial_genpara()
     for i in range(batch_size):
@@ -180,10 +164,12 @@ def single_process(batch_img, batch_label):
     return  batch_img, batch_label
 
 
-def generator_batch():
-    
+def generator_batch(batch_size):
+    global stretch_ratio
+    global batch_idx
+
     while 1:
-        global stretch_ratio
+        # random stretch ratio
         if np.random.random() > 0.8:
             stretch_ratio = np.random.uniform(0.7, 1.2)
         else:
@@ -192,7 +178,7 @@ def generator_batch():
         batch_img = []
         batch_label = []
         #print("start get a batch ========")
-        batch_img, batch_label = multi_process(batch_img, batch_label)
+        batch_img, batch_label = single_process(batch_img, batch_label, batch_size)
         #print("get a batch ====================================")
 
         batch_img = np.array(batch_img)
@@ -213,19 +199,22 @@ def generator_batch():
         x_input = [batch_img, batch_label, input_length, label_length]
         y_output = np.zeros([batch_size, 1])
         
-        yield x_input, y_output
+        batch_idx += 1
+        
+        return x_input, y_output
 
 def save_char_statistic():
     with open('statistics.txt', 'w') as f:
         print(statistic, file=f)
 
 if __name__ == '__main__':
-    ff = generator_batch()
+    #gen = generator_batch(20)
     labels = []
     i = 0
-    for i in range(10):
-        batch_idx += 1
-        res = next(ff)
+    # for i in range(10):
+    while True:
+        i += 1        
+        res = generator_batch(20)#next(gen)
         #labels.append(res[0][1])
         print('----------------------', i, '   ', res[0][0].shape)
         #$print('----------------------', res[0][1][1:10])
