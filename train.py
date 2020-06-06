@@ -12,7 +12,8 @@ from architects.crnn import crnn
 from datasets import train_generator, val_generator
 # from datasets.generator import TextImageGenerator
 # from utils.visualize import VizCallback
-from datasets.text_renderer import generator_data
+#from datasets.text_renderer import generator_data
+
 import config as cfg
 
 
@@ -52,11 +53,7 @@ def train(start_epoch, stop_epoch):
     # callbacks
     lr_base = 0.001
     def learning_rate_schedule(epoch):
-        lr = lr_base * 0.9 ** int(epoch/10)
-
-        if epoch%10 == 0:
-            generator_data.save_char_statistic()
-            
+        lr = lr_base * 0.9 ** int(epoch/10)            
         return lr
 
     lr_schedule = LearningRateScheduler(schedule=learning_rate_schedule)
@@ -68,21 +65,27 @@ def train(start_epoch, stop_epoch):
                                         mode='min', save_weights_only=True)
 
     tensorboard = TensorBoard(log_dir='outputs/summary/'+datetime.now().strftime("%Y:%m:%d-%H:%M:%S"))
-
     
+    batch_size = 20
+    steps_per_epoch = 11
+    train_gen = train_generator.DataGenerator(batch_size, steps_per_epoch)
+
     # start training
-    model.fit_generator(generator=generator_data.generator_batch(), #img_gen.next_train(),
-                        steps_per_epoch=10, #(words_per_epoch - val_words) // minibatch_size,
+    model.fit_generator(generator=train_gen, #img_gen.next_train(),
+                        steps_per_epoch=steps_per_epoch, #(words_per_epoch - val_words) // minibatch_size,
                         epochs=stop_epoch,
                         # validation_data=generator_data.generator_batch(),
                         # validation_steps=10,
                         callbacks=[lr_schedule, early_stopping, model_checkpoint, tensorboard],
-                        initial_epoch=start_epoch
+                        initial_epoch=start_epoch,
+                        max_queue_size=12,
+                        use_multiprocessing=True,
+                        workers=4
                         )
 
 
 if __name__ == "__main__":
-    train(0, 2)
+    train(0, 11)
     # increase to wider images and start at epoch 20.
     # The learned weights are reloaded
     # train(20, 25)
