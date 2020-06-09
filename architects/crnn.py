@@ -94,14 +94,14 @@ def cnn_resnet(input):
     backbone for crnn, based on resnet architecture.
     h stride=2*5, w stride=2*2
     '''
-    x = Conv2D(64, (7, 7), strides=(1, 1), padding="same", name="conv1")(input)  # original strides=(2, 2)
+    x = Conv2D(32, (7, 7), strides=(1, 1), padding="same", name="conv1")(input)  # original: filters=64, strides=(2, 2)
     x = BatchNormalization(name="conv1_bn")(x)
     x = Activation("relu")(x)
     x = MaxPool2D((3, 3), strides=(2, 2))(x)
 
-    inplane = 64    
+    inplane = 32  # 64 
     layer_nums = [2, 3, 5, 2]  # [3, 4, 6, 3]
-    filters = [64, 128, 256, 512]
+    filters = [32, 64, 128, 256]  # [64, 128, 256, 512]
     stride_lists = [(2, 1), (2, 2), (2, 1), (2, 1)]  # First Layer don't Downsample, 
 
     for i in range(4):
