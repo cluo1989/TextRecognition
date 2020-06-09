@@ -21,9 +21,10 @@ class DataGenerator(keras.utils.Sequence):
         'Generate one batch of data'
         x_input, y_output = generator_data.generator_batch(self.batch_size)
         self.count_batch += 1
-        print("current batch id:", self.count_batch)
+        #print("current batch id:", self.count_batch)
         return x_input, y_output
 
     def on_epoch_end(self):
         'Do something like "shuffle indexes"'
-        generator_data.save_char_statistic()
+        # generator_data.save_char_statistic()
+        pass

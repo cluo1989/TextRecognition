@@ -4,7 +4,6 @@ Created on Fri Jun 21 13:27:55 2019
 
 @author: hu
 """
-import traceback
 import numpy as np
 import random
 import multiprocessing as mp
@@ -59,7 +58,6 @@ def gen_img_retry(renderer, img_index):
 
     except Exception as e:
         print("Retry gen_img: %s" % str(e))
-        traceback.print_exc()
         raise Exception
 
     if (word == '' or im is None or im.size == 0):
