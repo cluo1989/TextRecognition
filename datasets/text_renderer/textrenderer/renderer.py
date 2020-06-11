@@ -272,7 +272,7 @@ class Renderer(object):
         try:
             dst = cv2.resize(dst, (self.out_width, self.out_height), interpolation=cv2.INTER_CUBIC)
         except Exception as e:
-            print("Resize fail at renderer>crop_img!: %s" % str(e))            
+            #print("Resize fail at renderer>crop_img!: %s" % str(e))            
             raise Exception
 
         return dst, dst_bbox

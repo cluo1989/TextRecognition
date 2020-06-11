@@ -57,7 +57,7 @@ def gen_img_retry(renderer, img_index):
         im, word = renderer.gen_img(img_index)
 
     except Exception as e:
-        print("Retry gen_img: %s" % str(e))
+        #print("Retry gen_img: %s" % str(e))
         raise Exception
 
     if (word == '' or im is None or im.size == 0):

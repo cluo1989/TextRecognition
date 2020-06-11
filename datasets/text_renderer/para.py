@@ -41,7 +41,7 @@ class Para:
         #print(self.length)
         min_hw_ratio = 0.8
         max_hw_ratio = 1.0
-        ratio = random.uniform(min_hw_ratio, max_hw_ratio)
+        ratio = 1.0#random.uniform(min_hw_ratio, max_hw_ratio)
         self.img_width = int(ratio * self.length * self.img_height)
         
         

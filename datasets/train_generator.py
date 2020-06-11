@@ -4,7 +4,7 @@ from tensorflow import keras
 from datasets.text_renderer import generator_data
 
 
-class DataGenerator(keras.utils.Sequence):
+class TrainDataGenerator(keras.utils.Sequence):
     'Generates data for keras'
     def __init__(self, batch_size, batch_num, shuffle=True):
         'Initialization'
