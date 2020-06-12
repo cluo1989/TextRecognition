@@ -38,10 +38,11 @@ class Para:
         min_char = 10#2
         max_char = 10#13
         self.length = random.randint(min_char, max_char)
-        #print(self.length)
+        
         min_hw_ratio = 0.8
         max_hw_ratio = 1.0
-        ratio = 1.0#random.uniform(min_hw_ratio, max_hw_ratio)
+        ratio = random.uniform(min_hw_ratio, max_hw_ratio)
+        
         self.img_width = int(ratio * self.length * self.img_height)
         
         
