@@ -100,7 +100,7 @@ def cnn_resnet(input):
     x = MaxPool2D((3, 3), strides=(2, 2))(x)
 
     inplane = 32  # 64 
-    layer_nums = [2, 3, 5, 2]  # [3, 4, 6, 3]
+    layer_nums = [3, 4, 6, 3]  # [2, 3, 5, 2]
     filters = [32, 64, 128, 256]  # [64, 128, 256, 512]
     stride_lists = [(2, 1), (2, 2), (2, 1), (2, 1)]  # First Layer don't Downsample, 
 
