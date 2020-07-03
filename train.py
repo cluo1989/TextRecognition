@@ -44,7 +44,6 @@ def train(start_epoch, stop_epoch):
             if start_weights in p:
                 weight_file = p
                 model.load_weights(os.path.join(path, weight_file))
-                print(os.path.join(path, weight_file),'===============')
 
     # captures output of softmax so we can decode the output during visualization
     #test_func = K.function(model.inputs, model.outputs)
@@ -116,21 +115,21 @@ def train(start_epoch, stop_epoch):
     val_gen = ValDataGenerator(imglist, labellist, batch_size)
 
     # start training
-    model.fit_generator(generator=train_gen,
-                        steps_per_epoch=steps_per_epoch,  # default: iterate over the training dataset
-                        epochs=stop_epoch,
-                        validation_data=val_gen,
-                        validation_steps=5,  # default: iterate over the validation dataset
-                        callbacks=callbacks,
-                        initial_epoch=start_epoch,
-                        max_queue_size=12,
-                        use_multiprocessing=True,
-                        workers=4
-                        )
+    model.fit(train_gen,
+              steps_per_epoch=steps_per_epoch,  # default: iterate over the training dataset
+              epochs=stop_epoch,
+              validation_data=val_gen,
+              validation_steps=5,  # default: iterate over the validation dataset
+              callbacks=callbacks,
+              initial_epoch=start_epoch,
+              # max_queue_size=5,
+              # use_multiprocessing=True,
+              # workers=2
+             )
 
 
 if __name__ == "__main__":
-    train(1, 1000)
+    train(0, 1000)
     # increase to wider images and start at epoch 20.
     # The learned weights are reloaded
     # train(20, 25)
