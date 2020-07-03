@@ -6,7 +6,7 @@ import os
 
 # load model
 model = crnn('test')
-model.load_weights('outputs/checkpoint/weights.0012-0.0690-0.0025.h5')
+model.load_weights('outputs/checkpoint/weights.0020-0.0386-0.0019.h5')
 
 # get validate list
 valdir = 'datasets/validate_dataset/'
@@ -21,8 +21,8 @@ for idx, line in enumerate(lines):
     imgpath = valdir + image
 
     # read img
-    img = cv2.imread(imgpath)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    input = cv2.imread(imgpath)
+    img = cv2.cvtColor(input, cv2.COLOR_BGR2GRAY)
     img = np.expand_dims(img, -1)
 
     # prepro
@@ -43,5 +43,7 @@ for idx, line in enumerate(lines):
         cnt += 1
     else:
         print(idx, result, label)
+        # cv2.imshow(result, input)
+        # cv2.waitKey()
 
 print('acc:{:.4f}'.format(cnt/len(lines)))
